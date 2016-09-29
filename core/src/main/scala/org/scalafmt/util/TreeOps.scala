@@ -1,6 +1,7 @@
 package org.scalafmt.util
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.meta.Case
 import scala.meta.Ctor
 import scala.meta.Decl
@@ -171,6 +172,44 @@ object TreeOps {
     }
     loop(tree)
     result.result()
+  }
+
+  // applies f to all tree nodes
+  def treeForeach(tree: Tree)(f: Tree => Unit): Unit = {
+    def loop(tree: Tree): Unit = {
+      f(tree)
+      tree.children.foreach(loop)
+    }
+    loop(tree)
+  }
+
+  def fastGetOwners(tree: Tree): Map[TokenHash, Tree] = {
+    val starts = mutable.Map.empty[Int, Vector[Tree]]
+    val ends = mutable.Map.empty[Int, Int]
+    treeForeach(tree) { t =>
+      val start = t.pos.start.offset
+      val end = t.pos.end.offset
+      if (start != end) {
+        starts(start) = starts.getOrElse(start, Vector.empty[Tree]) :+ t
+        ends(end) = 1 + ends.getOrElse(end, 0)
+      }
+    }
+    var stack = List.empty[Tree]
+    val b = Map.newBuilder[TokenHash, Tree]
+    tree.tokens.foreach { tok =>
+      if (starts.contains(tok.start)) {
+        starts(tok.start).foreach { tree =>
+          stack = tree :: stack
+        }
+      }
+      b += (hash(tok) -> stack.head)
+      if (ends.contains(tok.end)) {
+        (0 until ends(tok.end)).foreach { _ =>
+          if (stack.nonEmpty) stack = stack.tail
+        }
+      }
+    }
+    b.result()
   }
 
   @tailrec

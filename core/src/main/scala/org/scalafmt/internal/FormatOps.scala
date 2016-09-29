@@ -37,7 +37,7 @@ class FormatOps(val tree: Tree, val initStyle: ScalafmtConfig) {
   import TreeOps._
 
   val tokens: Array[FormatToken] = FormatToken.formatTokens(tree.tokens)
-  val ownersMap = getOwners(tree)
+  val ownersMap = fastGetOwners(tree)
   val statementStarts = getStatementStarts(tree)
   val dequeueSpots = getDequeueSpots(tree) ++ statementStarts.keys
   val matchingParentheses = getMatchingParentheses(tree.tokens)
