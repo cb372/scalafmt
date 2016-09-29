@@ -76,7 +76,6 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     formatRewrite(code)
   }
 
-
   def testMe(): Unit = {
     setup()
     scalafmt()
@@ -99,22 +98,23 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     TreeOps.fastGetOwners(tree).toString
   }
 
-
-//  @Benchmark
-//  def scalafmt_noPruneSlowStates(): String = {
-//    Scalafmt
-//      .format(
-//        code,
-//        runner = ScalafmtRunner.default.copy(
-//          optimizer = ScalafmtOptimizer.default.copy(pruneSlowStates = false)))
-//      .get
-//  }
+  @Benchmark
+  def scalafmt_noPruneSlowStates(): String = {
+    Scalafmt
+      .format(
+        code,
+        style = ScalafmtConfig.default.copy(
+          runner = ScalafmtRunner.default.copy(optimizer =
+            ScalafmtOptimizer.default.copy(pruneSlowStates = false)))
+      )
+      .get
+  }
 
   // No need to run same benchmark again and again.
 //  @Benchmark
-//  def scalariform(): String = {
-//    ScalaFormatter.format(code)
-//  }
+  def scalariform(): String = {
+    ScalaFormatter.format(code)
+  }
 }
 
 object Micro {
