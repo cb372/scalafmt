@@ -14,6 +14,7 @@ import org.openjdk.jmh.annotations.Warmup
 import org.scalafmt.Scalafmt
 import org.scalafmt.util.FileOps
 import scala.meta.Source
+import scala.meta.Tree
 import scalariform.formatter.ScalaFormatter
 import scalariform.formatter.preferences.FormattingPreferences
 import scalariform.formatter.preferences.IndentSpaces
@@ -25,6 +26,7 @@ import org.scalafmt.config.ScalafmtRunner
 import org.scalafmt.config.ScalafmtConfig
 import org.scalafmt.rewrite.RedundantBraces
 import org.scalafmt.rewrite.SortImports
+import org.scalafmt.util.TreeOps
 
 /**
   * Formats filename at [[path]] with scalafmt and scalariform.
@@ -43,6 +45,7 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     FormattingPreferences().setPreference(IndentSpaces, 3)
   val classLoader = getClass.getClassLoader
   var code: String = _
+  var tree: Tree = _
 
   @Setup
   def setup(): Unit = {
@@ -57,26 +60,45 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     else FileOps.getFile(Seq("benchmarks", "src", "resources") ++ path: _*)
   }
 
+  @Benchmark
   def scalametaParser(): Unit = {
     import scala.meta._
     code.parse[Source]
   }
 
-  @Benchmark
+//  @Benchmark
   def scalafmt(): String = {
     Scalafmt.format(code).get
   }
 
-  @Benchmark
+//  @Benchmark
   def scalafmt_rewrite(): String = {
     formatRewrite(code)
   }
+
 
   def testMe(): Unit = {
     setup()
     scalafmt()
     scalafmt_rewrite()
+    getOwners()
+    fastGetOwners()
   }
+
+  @Benchmark
+  def getOwners(): String = {
+    import scala.meta._
+    val tree = code.parse[Source].get
+    TreeOps.getOwners(tree).toString
+  }
+
+  @Benchmark
+  def fastGetOwners(): String = {
+    import scala.meta._
+    val tree = code.parse[Source].get
+    TreeOps.fastGetOwners(tree).toString
+  }
+
 
 //  @Benchmark
 //  def scalafmt_noPruneSlowStates(): String = {

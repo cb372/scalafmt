@@ -15,6 +15,7 @@ import scala.meta.Template
 import scala.meta.Term
 import scala.meta.Tree
 import scala.meta.Type
+import scala.meta.internal.parsers.ScalametaParser
 import scala.meta.tokens.Token
 import scala.meta.tokens.Token._
 import scala.meta.tokens.Tokens
@@ -165,6 +166,9 @@ object TreeOps {
   def getOwners(tree: Tree): Map[TokenHash, Tree] = {
     val result = Map.newBuilder[TokenHash, Tree]
     def loop(x: Tree): Unit = {
+      import LoggerOps._
+      val toks = x.tokens.map(_.structure).mkString(reveal(" "))
+//      logger.elem(x.structure, toks)
       x.tokens.foreach { tok =>
         result += hash(tok) -> x
       }
@@ -184,30 +188,33 @@ object TreeOps {
   }
 
   def fastGetOwners(tree: Tree): Map[TokenHash, Tree] = {
-    val starts = mutable.Map.empty[Int, Vector[Tree]]
-    val ends = mutable.Map.empty[Int, Int]
-    treeForeach(tree) { t =>
-      val start = t.pos.start.offset
-      val end = t.pos.end.offset
-      if (start != end) {
-        starts(start) = starts.getOrElse(start, Vector.empty[Tree]) :+ t
-        ends(end) = 1 + ends.getOrElse(end, 0)
-      }
+    val input = tree.tokens.head.input
+    val dialect = tree.tokens.head.dialect
+    // parser.TreePos gives index positions for all tokens.
+    val parser = new ScalametaParser(input, dialect)
+    val starts =
+      mutable.Map.empty[Int, Vector[Tree]].withDefaultValue(Vector.empty[Tree])
+    val ends = mutable.Map.empty[Int, Int].withDefaultValue(0)
+    treeForeach(tree) {
+      case t if t.pos.start.offset == t.pos.end.offset =>
+      case t =>
+        val pos = parser.TreePos(t)
+        val start = pos.startTokenPos
+        val end = pos.endTokenPos
+        starts(start) = starts(start) :+ t
+        ends(end) = 1 + ends(end)
     }
     var stack = List.empty[Tree]
     val b = Map.newBuilder[TokenHash, Tree]
-    tree.tokens.foreach { tok =>
-      if (starts.contains(tok.start)) {
-        starts(tok.start).foreach { tree =>
+    tree.tokens.zipWithIndex.foreach {
+      case (tok, i) =>
+        starts(i).foreach { tree =>
           stack = tree :: stack
         }
-      }
-      b += (hash(tok) -> stack.head)
-      if (ends.contains(tok.end)) {
-        (0 until ends(tok.end)).foreach { _ =>
+        b += (hash(tok) -> stack.head)
+        (0 until ends(i)).foreach { _ =>
           if (stack.nonEmpty) stack = stack.tail
         }
-      }
     }
     b.result()
   }
