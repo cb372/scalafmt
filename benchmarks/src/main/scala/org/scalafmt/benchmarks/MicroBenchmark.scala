@@ -1,5 +1,7 @@
 package org.scalafmt.benchmarks
 
+import scala.collection.mutable
+
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -15,6 +17,8 @@ import org.scalafmt.Scalafmt
 import org.scalafmt.util.FileOps
 import scala.meta.Source
 import scala.meta.Tree
+import scala.meta.dialects.Scala211
+import scala.meta.internal.parsers.ScalametaParser
 import scalariform.formatter.ScalaFormatter
 import scalariform.formatter.preferences.FormattingPreferences
 import scalariform.formatter.preferences.IndentSpaces
@@ -26,6 +30,8 @@ import org.scalafmt.config.ScalafmtRunner
 import org.scalafmt.config.ScalafmtConfig
 import org.scalafmt.rewrite.RedundantBraces
 import org.scalafmt.rewrite.SortImports
+import org.scalafmt.util.TokenOps
+import org.scalafmt.util.TokenOps.TokenHash
 import org.scalafmt.util.TreeOps
 
 /**
@@ -60,7 +66,7 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     else FileOps.getFile(Seq("benchmarks", "src", "resources") ++ path: _*)
   }
 
-  @Benchmark
+//  @Benchmark
   def scalametaParser(): Unit = {
     import scala.meta._
     code.parse[Source]
@@ -84,7 +90,7 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     fastGetOwners()
   }
 
-  @Benchmark
+//  @Benchmark
   def getOwners(): String = {
     import scala.meta._
     val tree = code.parse[Source].get
@@ -98,7 +104,7 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     TreeOps.fastGetOwners(tree).toString
   }
 
-  @Benchmark
+//  @Benchmark
   def scalafmt_noPruneSlowStates(): String = {
     Scalafmt
       .format(

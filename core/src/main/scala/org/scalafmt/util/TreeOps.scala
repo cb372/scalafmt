@@ -15,6 +15,7 @@ import scala.meta.Template
 import scala.meta.Term
 import scala.meta.Tree
 import scala.meta.Type
+import scala.meta.dialects.Scala211
 import scala.meta.internal.parsers.ScalametaParser
 import scala.meta.tokens.Token
 import scala.meta.tokens.Token._
@@ -188,8 +189,8 @@ object TreeOps {
   }
 
   def fastGetOwners(tree: Tree): Map[TokenHash, Tree] = {
-    val input = tree.tokens.head.input
-    val dialect = tree.tokens.head.dialect
+    val input = tree.pos.input
+    val dialect = Scala211
     // parser.TreePos gives index positions for all tokens.
     val parser = new ScalametaParser(input, dialect)
     val starts =
@@ -206,15 +207,21 @@ object TreeOps {
     }
     var stack = List.empty[Tree]
     val b = Map.newBuilder[TokenHash, Tree]
-    tree.tokens.zipWithIndex.foreach {
-      case (tok, i) =>
-        starts(i).foreach { tree =>
-          stack = tree :: stack
-        }
-        b += (hash(tok) -> stack.head)
-        (0 until ends(i)).foreach { _ =>
-          if (stack.nonEmpty) stack = stack.tail
-        }
+    var i = 0
+    val tokens = tree.tokens.toArray
+    val N = tokens.length
+    while (i < N) {
+      val tok = tokens(i)
+      starts(i).foreach { tree =>
+        stack = tree :: stack
+      }
+      b += (hash(tok) -> stack.head)
+      var j = ends(i)
+      while (j > 0) {
+        if (stack.nonEmpty) stack = stack.tail
+        j -= 1
+      }
+      i += 1
     }
     b.result()
   }

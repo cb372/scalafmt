@@ -1,6 +1,6 @@
 rewrite.rules = [RedundantBraces]
 rewrite.redundantBraces.maxLines = 1
-<<< basic
+<<< ONLY basic
 object a {
   def x(i: Int): Int = {
     2
@@ -23,7 +23,7 @@ object a {
   def z(i: Int): Int =
     4
 }
-<<< respect max lines
+<<< ONLY respect max lines
 object a {
   def x(i: Int): Int = {
     List.filter { x =>
