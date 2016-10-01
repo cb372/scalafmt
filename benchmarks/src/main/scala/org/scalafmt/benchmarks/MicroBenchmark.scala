@@ -72,7 +72,7 @@ abstract class MicroBenchmark(path: String*) extends FormatBenchmark {
     code.parse[Source]
   }
 
-//  @Benchmark
+  @Benchmark
   def scalafmt(): String = {
     Scalafmt.format(code).get
   }

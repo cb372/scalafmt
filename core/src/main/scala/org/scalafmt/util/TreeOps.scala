@@ -215,7 +215,9 @@ object TreeOps {
       starts(i).foreach { tree =>
         stack = tree :: stack
       }
-      b += (hash(tok) -> stack.head)
+      if (!tok.is[Whitespace]) {
+        b += (hash(tok) -> stack.head)
+      }
       var j = ends(i)
       while (j > 0) {
         if (stack.nonEmpty) stack = stack.tail
